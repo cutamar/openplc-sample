@@ -17,11 +17,11 @@ The setup was done on **Arch Linux** and includes:
 
 ## Why Runtime v3 and Runtime v4 Were Tested
 
-During setup, I tested OpenPLC Runtime v4 first.
+During setup, I tested **OpenPLC Runtime v4** first.
 
 Runtime v4 could be started as a Docker container, but the classic web-based interface expected for this assignment was removed from that version.
 
-Because the assignment requires confirming deployment through the OpenPLC web-based runtime interface, I also used OpenPLC Runtime v3, which includes the web interface.
+Because the assignment requires confirming deployment through the OpenPLC web-based runtime interface, I also used **OpenPLC Runtime v3**, which still includes the web interface.
 
 ## Installing Git
 
@@ -95,7 +95,39 @@ The editor can be downloaded from:
 https://autonomylogic.com/download
 ```
 
-After downloading the Linux package, follow the installation instructions from the OpenPLC download page.
+![OpenPLC download page](/setup/assets/openplc-download-page.png)
+
+From the download page, select the Linux version of the OpenPLC Editor.
+
+On Arch Linux, the downloaded editor package may require FUSE to run. I installed FUSE before starting the editor:
+
+```bash
+sudo pacman -S fuse2
+```
+
+I also created an `Applications` directory in my home folder and moved the downloaded OpenPLC Editor file there:
+
+```bash
+mkdir -p ~/Applications
+mv ~/Downloads/OpenPLC* ~/Applications/
+```
+
+Then I made the downloaded editor file executable:
+
+```bash
+chmod +x ~/Applications/OpenPLC*
+```
+
+Finally, I started the editor from the `Applications` directory (alternatively double click it to execute it):
+
+```bash
+cd ~/Applications
+./OpenPLC*
+```
+
+After installation/startup, confirm that the editor opens successfully.
+
+![OpenPLC Editor running](/setup/assets/openplc-editor-running.png)
 
 The editor is used in this project to:
 
@@ -103,14 +135,6 @@ The editor is used in this project to:
 - define variables
 - write Structured Text logic
 - generate the program for deployment to the runtime
-
-## Screenshot: OpenPLC Editor
-
-Add a screenshot showing that OpenPLC Editor starts successfully.
-
-```text
-TODO: Add screenshot of OpenPLC Editor running
-```
 
 ## Installing OpenPLC Runtime v4
 
@@ -146,7 +170,7 @@ View logs if needed:
 docker logs openplc-runtime
 ```
 
-## Docker Command Explanation
+### Docker Command Explanation
 
 | Option | Meaning |
 |---|---|
@@ -156,16 +180,13 @@ docker logs openplc-runtime
 | `--cap-add=SYS_NICE` | Allows the container to adjust scheduling behavior |
 | `--cap-add=SYS_RESOURCE` | Allows the container to use required resource-related capabilities |
 | `-v openplc-runtime-data:/var/run/runtime` | Stores runtime data in a Docker volume |
+| `ghcr.io/autonomy-logic/openplc-runtime:latest` | Docker image used to start OpenPLC Runtime v4 |
 
-## Runtime v4 Observation
+### Runtime v4 Observation
 
 In my setup, Runtime v4 did not provide the web interface needed for the documentation and deployment workflow.
 
 For that reason, Runtime v3 was used for the main deployment and validation part of the project.
-
-```text
-TODO: Add screenshot showing OpenPLC Runtime v4 Docker container running
-```
 
 ## Installing OpenPLC Runtime v3
 
@@ -174,8 +195,7 @@ OpenPLC Runtime v3 was used because it includes the web-based runtime interface.
 The web interface is useful because it allows:
 
 - uploading the generated PLC program
-- starting the PLC runtime
-- stopping the PLC runtime
+- starting and stopping the PLC runtime
 - checking runtime status
 - monitoring deployed program behavior
 
@@ -190,16 +210,19 @@ git clone https://github.com/thiagoralves/OpenPLC_v3.git
 ```
 
 Enter the repository directory:
+
 ```bash
 cd OpenPLC_v3
 ```
 
 Build the Docker image:
+
 ```bash
 docker build -t openplc:v3 .
 ```
 
 Run the container:
+
 ```bash
 docker run -d --rm \
   --name openplc-runtime \
@@ -214,6 +237,7 @@ docker run -d --rm \
 Alternatively, use the prebuilt `tuttas/openplc_v3` Docker image.
 
 Run the container:
+
 ```bash
 docker run -d --rm \
   --name openplc-runtime \
@@ -224,6 +248,7 @@ docker run -d --rm \
 ```
 
 This starts OpenPLC Runtime v3 and exposes:
+
 | Port | Purpose |
 |---|---|
 | `8080` | OpenPLC web interface |
@@ -241,7 +266,7 @@ View logs if needed:
 docker logs openplc-runtime
 ```
 
-## Docker Command Explanation
+### Docker Command Explanation
 
 | Option | Meaning |
 |---|---|
@@ -255,17 +280,23 @@ docker logs openplc-runtime
 
 ## Accessing the Runtime Web Interface
 
-After starting the runtime, open the web interface in the browser.
+After starting OpenPLC Runtime v3, open the web interface in the browser:
 
 ```text
 http://localhost:8080
 ```
 
-If the web interface opens successfully you can login using:
+If the web interface opens successfully, log in with the default credentials:
 
 ```text
 Username: openplc
 Password: openplc
 ```
+
+![OpenPLC Runtime v3 login page](/setup/assets/openplc-runtime-v3-login.png)
+
+After logging in, the runtime dashboard should be visible.
+
+![OpenPLC Runtime v3 dashboard](/setup/assets/openplc-runtime-v3-dashboard.png)
 
 The next step is to create a small Structured Text test program in OpenPLC Editor.
