@@ -9,11 +9,6 @@
           "title": "Overview",
           "href": "/",
           "icon": "home"
-        },
-        {
-          "title": "Scenario",
-          "href": "/scenario",
-          "icon": "thermometer"
         }
       ]
     },
@@ -48,7 +43,7 @@
         {
           "title": "Modbus TCP Client",
           "href": "/implementation/modbus-client",
-          "icon": "network"
+          "icon": "network-wired"
         }
       ]
     },
@@ -78,7 +73,22 @@
         {
           "title": "Threshold Logic",
           "href": "/reference/threshold-logic",
-          "icon": "settings"
+          "icon": "sliders"
+        },
+        {
+          "title": "Structured Text Resources",
+          "href": "/reference/structured-text-resources",
+          "icon": "book-open"
+        }
+      ]
+    },
+    {
+      "group": "Research",
+      "pages": [
+        {
+          "title": "Future Improvements",
+          "href": "/project/future-improvements",
+          "icon": "flask"
         }
       ]
     }

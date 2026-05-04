@@ -1,56 +1,271 @@
 ---
-title: Welcome to docs.page!
-description: Get started with docs.page
+title: OpenPLC Installation
+description: Installing Git, Docker, OpenPLC Editor, and OpenPLC Runtime on Arch Linux.
 ---
 
-Welcome to docs.page! The init command you just ran has created a basic file struture in your project to help you get started.
+# OpenPLC Installation
 
-## Walkthrough
+This page documents the installation of the tools used for the OpenPLC temperature control project.
 
-### Configuration
+The setup was done on **Arch Linux** and includes:
 
-In the root of your directory a new `docs.json` file has been created. This file is used to configure your documentation site. You can customize the name, description, and sidebar, theme, logos and more using this file.
+- Git
+- Docker
+- OpenPLC Editor
+- OpenPLC Runtime v4
+- OpenPLC Runtime v3
 
-Here's a basic example of what the file looks like:
+## Why Runtime v3 and Runtime v4 Were Tested
 
-```
-{
-  "name": "My Docs",
-  "description": "My documentation site",
-  "sidebar": [
-  {
-    "group": "Getting Started",
-    "pages": [
-      {
-        "title": "Getting to know docs.page",
-        "href": "/",
-        "icon": "rocket"
-      },
-      {
-        "title": "Next Steps",
-        "href": "/next-steps",
-        "icon": "arrow-right"
-      }
-    ]
-  }
-]
-}
+During setup, I tested OpenPLC Runtime v4 first.
+
+Runtime v4 could be started as a Docker container, but the classic web-based interface expected for this assignment was removed from that version.
+
+Because the assignment requires confirming deployment through the OpenPLC web-based runtime interface, I also used OpenPLC Runtime v3, which includes the web interface.
+
+## Installing Git
+
+Git is used for version control and for managing the project repository.
+
+On Arch Linux, install Git with:
+
+```bash
+sudo pacman -S git
 ```
 
-To learn more about the advanced configuration options, check out the [docs](https://use.docs.page/configuration).
+Verify the installation:
 
-### Content
+```bash
+git --version
+```
 
-docs.page uses the `docs` directory to store your documentation pages. Two pages have been created for you:
+## Installing Docker
 
-- `index.mdx` - The home page of your documentation site, resolves to the root URL.
-- `next-steps.mdx` - A page to help you get started with docs.page, resolves to `/next-steps`.
+Docker is used to run OpenPLC Runtime in a containerized environment.
 
-Documentation can be written using the standard [GitHub Flavored Markdown Spec](https://github.github.com/gfm/) and also supports the use of [MDX](https://mdxjs.com/), 
-with the ability to render custom [components](https://use.docs.page/components) for more advanced use cases.
+Install Docker:
 
-## Preview
+```bash
+sudo pacman -S docker
+```
 
-To preview your documentation site, head over to [https://docs.page/preview](https://docs.page/preview) in your browser and open this directory.
+Enable the Docker service:
 
-Previewing your documentation site will allow you to see the changes you make in real-time before you publish to the world.
+```bash
+sudo systemctl enable docker.service
+```
+
+Start the Docker service:
+
+```bash
+sudo systemctl start docker.service
+```
+
+Add the current user to the `docker` group:
+
+```bash
+sudo usermod -aG docker amar
+```
+
+The group change does not affect already open shell sessions. To apply it without logging out and logging back in, run:
+
+```bash
+newgrp docker
+```
+
+Check whether Docker is available:
+
+```bash
+docker --version
+```
+
+Check whether the Docker daemon is running:
+
+```bash
+docker ps
+```
+
+## Installing OpenPLC Editor
+
+OpenPLC Editor is used to create the PLC program.
+
+The editor can be downloaded from:
+
+```text
+https://autonomylogic.com/download
+```
+
+After downloading the Linux package, follow the installation instructions from the OpenPLC download page.
+
+The editor is used in this project to:
+
+- create the `main` program
+- define variables
+- write Structured Text logic
+- generate the program for deployment to the runtime
+
+## Screenshot: OpenPLC Editor
+
+Add a screenshot showing that OpenPLC Editor starts successfully.
+
+```text
+TODO: Add screenshot of OpenPLC Editor running
+```
+
+## Installing OpenPLC Runtime v4
+
+OpenPLC Runtime v4 can be started using Docker.
+
+Pull the image:
+
+```bash
+docker pull ghcr.io/autonomy-logic/openplc-runtime:latest
+```
+
+Run the container:
+
+```bash
+docker run -d \
+  --name openplc-runtime \
+  -p 8443:8443 \
+  --cap-add=SYS_NICE \
+  --cap-add=SYS_RESOURCE \
+  -v openplc-runtime-data:/var/run/runtime \
+  ghcr.io/autonomy-logic/openplc-runtime:latest
+```
+
+Check that the container is running:
+
+```bash
+docker ps
+```
+
+View logs if needed:
+
+```bash
+docker logs openplc-runtime
+```
+
+## Docker Command Explanation
+
+| Option | Meaning |
+|---|---|
+| `-d` | Runs the container in the background |
+| `--name openplc-runtime` | Gives the container a readable name |
+| `-p 8443:8443` | Maps port `8443` from the container to the host |
+| `--cap-add=SYS_NICE` | Allows the container to adjust scheduling behavior |
+| `--cap-add=SYS_RESOURCE` | Allows the container to use required resource-related capabilities |
+| `-v openplc-runtime-data:/var/run/runtime` | Stores runtime data in a Docker volume |
+
+## Runtime v4 Observation
+
+In my setup, Runtime v4 did not provide the web interface needed for the documentation and deployment workflow.
+
+For that reason, Runtime v3 was used for the main deployment and validation part of the project.
+
+```text
+TODO: Add screenshot showing OpenPLC Runtime v4 Docker container running
+```
+
+## Installing OpenPLC Runtime v3
+
+OpenPLC Runtime v3 was used because it includes the web-based runtime interface.
+
+The web interface is useful because it allows:
+
+- uploading the generated PLC program
+- starting the PLC runtime
+- stopping the PLC runtime
+- checking runtime status
+- monitoring deployed program behavior
+
+There are two possible Docker-based installation options.
+
+## Option 1: Build OpenPLC Runtime v3 Locally
+
+First, clone the OpenPLC v3 repository:
+
+```bash
+git clone https://github.com/thiagoralves/OpenPLC_v3.git
+```
+
+Enter the repository directory:
+```bash
+cd OpenPLC_v3
+```
+
+Build the Docker image:
+```bash
+docker build -t openplc:v3 .
+```
+
+Run the container:
+```bash
+docker run -d --rm \
+  --name openplc-runtime \
+  --privileged \
+  -p 8080:8080 \
+  -p 502:502 \
+  openplc:v3
+```
+
+## Option 2: Use a Prebuilt Docker Image
+
+Alternatively, use the prebuilt `tuttas/openplc_v3` Docker image.
+
+Run the container:
+```bash
+docker run -d --rm \
+  --name openplc-runtime \
+  --privileged \
+  -p 8080:8080 \
+  -p 502:502 \
+  tuttas/openplc_v3
+```
+
+This starts OpenPLC Runtime v3 and exposes:
+| Port | Purpose |
+|---|---|
+| `8080` | OpenPLC web interface |
+| `502` | Modbus TCP |
+
+Check that the container is running:
+
+```bash
+docker ps
+```
+
+View logs if needed:
+
+```bash
+docker logs openplc-runtime
+```
+
+## Docker Command Explanation
+
+| Option | Meaning |
+|---|---|
+| `-d` | Runs the container in the background |
+| `--rm` | Automatically removes the container after it stops |
+| `--name openplc-runtime` | Gives the container a readable name |
+| `--privileged` | Gives the container extended permissions required by OpenPLC Runtime |
+| `-p 8080:8080` | Maps port `8080` from the container to the host for the OpenPLC web interface |
+| `-p 502:502` | Maps port `502` from the container to the host for Modbus TCP communication |
+| `tuttas/openplc_v3` | Docker image used to start OpenPLC Runtime v3 |
+
+## Accessing the Runtime Web Interface
+
+After starting the runtime, open the web interface in the browser.
+
+```text
+http://localhost:8080
+```
+
+If the web interface opens successfully you can login using:
+
+```text
+Username: openplc
+Password: openplc
+```
+
+The next step is to create a small Structured Text test program in OpenPLC Editor.

@@ -1,56 +1,71 @@
 ---
-title: Welcome to docs.page!
-description: Get started with docs.page
+title: OpenPLC Temperature Control
+description: Overview of the OpenPLC temperature control project using Structured Text and Modbus TCP.
 ---
 
-Welcome to docs.page! The init command you just ran has created a basic file struture in your project to help you get started.
+# OpenPLC Temperature Control
 
-## Walkthrough
+This documentation describes a small PLC/ICS project based on **OpenPLC**, **Structured Text**, and **Modbus TCP**.
 
-### Configuration
+The goal of the project is to build and test a basic temperature control system. A simulated temperature value is sent to the PLC, and the PLC controls a cooling fan output based on defined temperature thresholds.
 
-In the root of your directory a new `docs.json` file has been created. This file is used to configure your documentation site. You can customize the name, description, and sidebar, theme, logos and more using this file.
+## Project Goal
 
-Here's a basic example of what the file looks like:
+The project demonstrates the following steps:
 
-```
-{
-  "name": "My Docs",
-  "description": "My documentation site",
-  "sidebar": [
-  {
-    "group": "Getting Started",
-    "pages": [
-      {
-        "title": "Getting to know docs.page",
-        "href": "/",
-        "icon": "rocket"
-      },
-      {
-        "title": "Next Steps",
-        "href": "/next-steps",
-        "icon": "arrow-right"
-      }
-    ]
-  }
-]
-}
-```
+- installing and setting up OpenPLC Editor and Runtime
+- writing a small Structured Text test program
+- defining a temperature control scenario
+- deploying the control logic to OpenPLC Runtime
+- communicating with the PLC through Modbus TCP
+- validating the PLC behavior with different simulated temperature values
 
-To learn more about the advanced configuration options, check out the [docs](https://use.docs.page/configuration).
+## Control Scenario Summary
 
-### Content
+The control system uses a simulated temperature sensor as input and a cooling fan as output.
 
-docs.page uses the `docs` directory to store your documentation pages. Two pages have been created for you:
+When the temperature becomes too high, the fan turns on. When the temperature drops back to a lower safe level, the fan turns off again.
 
-- `index.mdx` - The home page of your documentation site, resolves to the root URL.
-- `next-steps.mdx` - A page to help you get started with docs.page, resolves to `/next-steps`.
+This project uses two thresholds:
 
-Documentation can be written using the standard [GitHub Flavored Markdown Spec](https://github.github.com/gfm/) and also supports the use of [MDX](https://mdxjs.com/), 
-with the ability to render custom [components](https://use.docs.page/components) for more advanced use cases.
+| Threshold | Value | Purpose |
+|---|---:|---|
+| Fan ON threshold | `86.0 °F` | Turns the fan on when the temperature is too high |
+| Fan OFF threshold | `77.0 °F` | Turns the fan off once the system has cooled down |
 
-## Preview
+Using two thresholds creates hysteresis and prevents the fan from rapidly switching on and off around a single temperature value.
 
-To preview your documentation site, head over to [https://docs.page/preview](https://docs.page/preview) in your browser and open this directory.
+## Tools Used
 
-Previewing your documentation site will allow you to see the changes you make in real-time before you publish to the world.
+| Tool | Purpose |
+|---|---|
+| OpenPLC Editor | Create the PLC program using Structured Text |
+| OpenPLC Runtime | Run and monitor the PLC program |
+| Docker | Run the OpenPLC Runtime environment |
+| Python | Implement the Modbus TCP test client |
+| pymodbus | Send and read Modbus TCP values |
+| Git | Version control and project management |
+
+## Documentation Structure
+
+The documentation is organized as follows:
+
+| Page | Description |
+|---|---|
+| OpenPLC Installation | Documents the OpenPLC, Docker, and Git setup |
+| Editor Basics | Documents the first small Structured Text test program |
+| Structured Text Program | Shows the final PLC logic |
+| Runtime Deployment | Shows how the logic was deployed to OpenPLC Runtime |
+| Modbus TCP Client | Explains the Python Modbus client |
+| Validation Tests | Describes the test cases |
+| Results | Documents the observed results and screenshots |
+| Variables | Lists the PLC variables used in the project |
+| Threshold Logic | Explains the hysteresis-based fan control thresholds |
+| Structured Text Resources | Lists the learning resources used for ST, OpenPLC, and Modbus TCP |
+| Future Improvements | Describes possible research-oriented extensions and improvements |
+
+## Repository
+
+The source repository and documentation are available here:
+
+https://github.com/cutamar/openplc-sample
