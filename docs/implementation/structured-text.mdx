@@ -1,56 +1,140 @@
 ---
-title: Welcome to docs.page!
-description: Get started with docs.page
+title: Structured Text Program
+description: Final Structured Text logic for the OpenPLC temperature control scenario.
 ---
 
-Welcome to docs.page! The init command you just ran has created a basic file struture in your project to help you get started.
+This page documents the final Structured Text program used for the temperature control scenario.
 
-## Walkthrough
+The program controls a cooling fan based on a simulated temperature value.
 
-### Configuration
+## Program Goal
 
-In the root of your directory a new `docs.json` file has been created. This file is used to configure your documentation site. You can customize the name, description, and sidebar, theme, logos and more using this file.
+The goal of the program is to:
 
-Here's a basic example of what the file looks like:
+- read a simulated temperature sensor value
+- turn the cooling fan on when the temperature is too high
+- turn the cooling fan off when the temperature has dropped sufficiently
+- avoid rapid switching around a single threshold
 
+## Variables
+
+The following variables are used by the program:
+
+| Name | Class | Type | Initial Value | Description |
+|---|---|---|---:|---|
+| `Temperature_Sensor` | Local | `REAL` | `68.0` | Simulated temperature sensor value in °F |
+| `Cooling_Fan` | Local | `BOOL` | `FALSE` | Output signal for the cooling fan |
+| `High_Threshold` | Local | `REAL` | `86.0` | Temperature where the fan turns on, in °F |
+| `Low_Threshold` | Local | `REAL` | `77.0` | Temperature where the fan turns off, in °F |
+
+The values correspond to:
+
+| Fahrenheit | Meaning |
+|---:|---|
+| `68.0 °F` | Initial low temperature |
+| `77.0 °F` | Fan OFF threshold |
+| `86.0 °F` | Fan ON threshold |
+
+If written as a full Structured Text variable declaration, the variables look like this:
+
+```pascal
+VAR
+    Temperature_Sensor : REAL := 68.0;
+    Cooling_Fan : BOOL := FALSE;
+    High_Threshold : REAL := 86.0;
+    Low_Threshold : REAL := 77.0;
+END_VAR
 ```
-{
-  "name": "My Docs",
-  "description": "My documentation site",
-  "sidebar": [
-  {
-    "group": "Getting Started",
-    "pages": [
-      {
-        "title": "Getting to know docs.page",
-        "href": "/",
-        "icon": "rocket"
-      },
-      {
-        "title": "Next Steps",
-        "href": "/next-steps",
-        "icon": "arrow-right"
-      }
-    ]
-  }
-]
-}
+
+## Structured Text Logic
+
+```pascal
+IF Temperature_Sensor >= High_Threshold THEN
+    Cooling_Fan := TRUE;
+ELSIF Temperature_Sensor <= Low_Threshold THEN
+    Cooling_Fan := FALSE;
+END_IF;
 ```
 
-To learn more about the advanced configuration options, check out the [docs](https://use.docs.page/configuration).
+## Logic Explanation
 
-### Content
+The logic uses two thresholds.
 
-docs.page uses the `docs` directory to store your documentation pages. Two pages have been created for you:
+If the temperature sensor value is greater than or equal to the high threshold, the cooling fan is turned on:
 
-- `index.mdx` - The home page of your documentation site, resolves to the root URL.
-- `next-steps.mdx` - A page to help you get started with docs.page, resolves to `/next-steps`.
+```pascal
+IF Temperature_Sensor >= High_Threshold THEN
+    Cooling_Fan := TRUE;
+```
 
-Documentation can be written using the standard [GitHub Flavored Markdown Spec](https://github.github.com/gfm/) and also supports the use of [MDX](https://mdxjs.com/), 
-with the ability to render custom [components](https://use.docs.page/components) for more advanced use cases.
+If the temperature sensor value is less than or equal to the low threshold, the cooling fan is turned off:
 
-## Preview
+```pascal
+ELSIF Temperature_Sensor <= Low_Threshold THEN
+    Cooling_Fan := FALSE;
+```
 
-To preview your documentation site, head over to [https://docs.page/preview](https://docs.page/preview) in your browser and open this directory.
+If the temperature sensor value is between both thresholds, the program does not change `Cooling_Fan`.
 
-Previewing your documentation site will allow you to see the changes you make in real-time before you publish to the world.
+This means the fan keeps its previous state.
+
+## Why the Fan State Is Kept Between Thresholds
+
+The program intentionally does nothing when `Temperature_Sensor` is between `77.0 °F` and `86.0 °F`.
+
+This creates hysteresis.
+
+For example:
+
+| `Temperature_Sensor` | Previous Fan State | New Fan State |
+|---:|---|---|
+| `80.6 °F` | `FALSE` | `FALSE` |
+| `80.6 °F` | `TRUE` | `TRUE` |
+
+The same temperature can therefore result in a different fan state depending on the previous state.
+
+This is expected and useful because it prevents the fan from switching rapidly on and off.
+
+## Expected Behavior
+
+| `Temperature_Sensor` | Expected Fan State | Reason |
+|---:|---|---|
+| `68.0 °F` | `FALSE` | Temperature is low |
+| `77.0 °F` | `FALSE` | Low threshold reached |
+| `82.4 °F` | unchanged | Temperature is between thresholds |
+| `86.0 °F` | `TRUE` | High threshold reached |
+| `95.0 °F` | `TRUE` | Temperature is above high threshold |
+
+## OpenPLC Editor Notes
+
+In OpenPLC Editor, the variables should be added in the variable table of the `main` program.
+
+Depending on the editor view, the Structured Text code area may only contain the program body. The editor may generate the `PROGRAM`, `VAR`, and `END_PROGRAM` structure automatically.
+
+## Running the Program in OpenPLC Editor
+
+Before deploying the program to OpenPLC Runtime, it can be tested directly in OpenPLC Editor using the debugger.
+
+The debugger can be used to observe the current values of:
+
+- `Temperature_Sensor`
+- `Cooling_Fan`
+- `High_Threshold`
+- `Low_Threshold`
+
+To test the logic, the simulated `Temperature_Sensor` value can be changed and the resulting `Cooling_Fan` value can be observed.
+
+Example test steps:
+
+| Step | Set `Temperature_Sensor` To | Expected `Cooling_Fan` |
+|---:|---:|---|
+| 1 | `68.0` | `FALSE` |
+| 2 | `86.0` | `TRUE` |
+| 3 | `82.4` | `TRUE` |
+| 4 | `77.0` | `FALSE` |
+
+The third step is important because it verifies the hysteresis behavior. Even though `82.4 °F` is below the high threshold, the fan should remain on because it has not yet reached the low threshold.
+
+![Temperature control program running in OpenPLC Editor debugger](/implementation/assets/editor-temperature-debugger.png)
+
+The final Structured Text program implements the required temperature control logic and is ready to be deployed to OpenPLC Runtime.

@@ -1,56 +1,175 @@
 ---
-title: Welcome to docs.page!
-description: Get started with docs.page
+title: Editor Basics
+description: First Structured Text test program in OpenPLC Editor using simple Boolean latch logic.
 ---
 
-Welcome to docs.page! The init command you just ran has created a basic file struture in your project to help you get started.
+This page documents a small test program created in OpenPLC Editor before implementing the final temperature control logic.
 
-## Walkthrough
+The purpose of this step is to verify that the editor works, variables can be created, Structured Text logic can be written, and the debugger can be used to observe variable states.
 
-### Configuration
+## Goal of the Test Program
 
-In the root of your directory a new `docs.json` file has been created. This file is used to configure your documentation site. You can customize the name, description, and sidebar, theme, logos and more using this file.
+The test program uses simple Boolean logic to simulate a start/stop control circuit.
 
-Here's a basic example of what the file looks like:
+This is not the final temperature control logic. It is only a small test program to become familiar with:
 
+- creating a project in OpenPLC Editor
+- selecting Structured Text as the programming language
+- defining Boolean variables
+- writing Structured Text
+- understanding cyclic PLC execution
+- checking variable states in the debugger
+
+## Creating the First Project
+
+After starting OpenPLC Editor, create a new project from the start screen.
+
+Click **New Project**.
+
+![OpenPLC Editor start screen with New Project button](/setup/assets/editor-new-project.png)
+
+Select **PLC Project** and continue with **Next**.
+
+![Create new PLC project](/setup/assets/editor-select-plc-project.png)
+
+Enter a project name and choose an empty directory for the project files.
+
+For this test, the project was named:
+
+```text
+st-learning
 ```
-{
-  "name": "My Docs",
-  "description": "My documentation site",
-  "sidebar": [
-  {
-    "group": "Getting Started",
-    "pages": [
-      {
-        "title": "Getting to know docs.page",
-        "href": "/",
-        "icon": "rocket"
-      },
-      {
-        "title": "Next Steps",
-        "href": "/next-steps",
-        "icon": "arrow-right"
-      }
-    ]
-  }
-]
-}
+
+![Project name and directory selection](/setup/assets/editor-project-name-directory.png)
+
+Next, choose the language for the base program.
+
+For this project, select:
+
+```text
+Structured Text
 ```
 
-To learn more about the advanced configuration options, check out the [docs](https://use.docs.page/configuration).
+The cyclic task time was set to:
 
-### Content
+```text
+T#20ms
+```
 
-docs.page uses the `docs` directory to store your documentation pages. Two pages have been created for you:
+Then click **Create Project**.
 
-- `index.mdx` - The home page of your documentation site, resolves to the root URL.
-- `next-steps.mdx` - A page to help you get started with docs.page, resolves to `/next-steps`.
+![Structured Text language and cyclic task time](/setup/assets/editor-structured-text-cycle-time.png)
 
-Documentation can be written using the standard [GitHub Flavored Markdown Spec](https://github.github.com/gfm/) and also supports the use of [MDX](https://mdxjs.com/), 
-with the ability to render custom [components](https://use.docs.page/components) for more advanced use cases.
+After creating the project, OpenPLC Editor opens the generated `main` program.
 
-## Preview
+![Empty main program in OpenPLC Editor](/setup/assets/editor-empty-main-program.png)
 
-To preview your documentation site, head over to [https://docs.page/preview](https://docs.page/preview) in your browser and open this directory.
+## Task Cycle Time
 
-Previewing your documentation site will allow you to see the changes you make in real-time before you publish to the world.
+When creating the program, the task cycle time defines how often the PLC program is executed.
+
+For example, a task cycle time of `20 ms` means that the PLC executes the program approximately every 20 milliseconds.
+
+In this project, `20 ms` is a reasonable choice because:
+
+- the logic is very small
+- the system does not need extremely fast control
+- it gives responsive behavior without being unnecessarily aggressive
+
+## Other Possible Cycle Times
+
+Different projects may use different cycle times.
+
+| Cycle Time | Example Use Case |
+|---:|---|
+| `5 ms` | Very fast machine control or motion-related logic |
+| `10 ms` | Fast digital input/output logic |
+| `20 ms` | General PLC logic and small control tasks |
+| `100 ms` | Slow processes such as temperature monitoring |
+| `500 ms` or more | Very slow monitoring or background tasks |
+
+For this assignment, `20 ms` is a safe default for testing. For a real temperature process, even a slower cycle time could be enough because temperature usually changes slowly.
+
+## Test Program Description
+
+The test program controls a simulated motor output.
+
+It has:
+
+| Variable | Type | Description |
+|---|---|---|
+| `Start_Button` | `BOOL` | Simulated start button |
+| `Stop_Button` | `BOOL` | Simulated stop button |
+| `Motor_Output` | `BOOL` | Simulated motor output |
+
+When `Start_Button` is pressed, the motor output turns on.
+
+When `Start_Button` is released, the motor output stays on.
+
+When `Stop_Button` is pressed, the motor output turns off.
+
+## Defining the Variables
+
+The variables were defined in the `main` program as local Boolean variables.
+
+| Name | Class | Type | Initial Value |
+|---|---|---|---|
+| `Start_Button` | Local | `BOOL` | `FALSE` |
+| `Stop_Button` | Local | `BOOL` | `FALSE` |
+| `Motor_Output` | Local | `BOOL` | `FALSE` |
+
+In OpenPLC Editor, the variables can be added in the variable table above the Structured Text code area.
+
+![Boolean variables and Structured Text code in OpenPLC Editor](/setup/assets/editor-boolean-variables-code.png)
+
+## Structured Text Logic
+
+The test logic is:
+
+```pascal
+Motor_Output := (Start_Button OR Motor_Output) AND NOT Stop_Button;
+```
+
+## Explanation
+
+The expression uses `OR Motor_Output` to create a latch.
+
+This means that after `Motor_Output` becomes `TRUE`, it keeps itself on in the next PLC cycles.
+
+The `Stop_Button` resets the latch. When `Stop_Button` is `TRUE`, the expression becomes `FALSE`, and the motor output turns off.
+
+In other words:
+
+- `Start_Button` turns the output on
+- `Motor_Output` keeps the output on after the start button is released
+- `Stop_Button` turns the output off
+
+## Test Sequence
+
+| Step | Action | `Start_Button` | `Stop_Button` | Expected `Motor_Output` |
+|---:|---|---|---|---|
+| 1 | Initial state | `FALSE` | `FALSE` | `FALSE` |
+| 2 | Press start | `TRUE` | `FALSE` | `TRUE` |
+| 3 | Release start | `FALSE` | `FALSE` | `TRUE` |
+| 4 | Press stop | `FALSE` | `TRUE` | `FALSE` |
+| 5 | Release stop | `FALSE` | `FALSE` | `FALSE` |
+
+## How the Button Press Was Simulated
+
+Because no physical buttons were connected, button presses were simulated by manually changing Boolean variable values in the debugger.
+
+For example:
+
+- pressing the start button means setting `Start_Button` to `TRUE`
+- releasing the start button means setting `Start_Button` back to `FALSE`
+- pressing the stop button means setting `Stop_Button` to `TRUE`
+
+The debugger shows the current values of the variables while the program is running.
+
+![Debugger showing Boolean variables](/setup/assets/editor-debugger-variables.png)
+
+## Result
+
+The Boolean latch test confirmed that OpenPLC Editor could be used to create a project, define variables, write Structured Text logic, and observe variable values in the debugger.
+
+After this test, we are moving on to the actual temperature control scenario.

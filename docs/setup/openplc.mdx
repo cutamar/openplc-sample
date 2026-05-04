@@ -3,8 +3,6 @@ title: OpenPLC Installation
 description: Installing Git, Docker, OpenPLC Editor, and OpenPLC Runtime on Arch Linux.
 ---
 
-# OpenPLC Installation
-
 This page documents the installation of the tools used for the OpenPLC temperature control project.
 
 The setup was done on **Arch Linux** and includes:
@@ -149,7 +147,7 @@ docker pull ghcr.io/autonomy-logic/openplc-runtime:latest
 Run the container:
 
 ```bash
-docker run -d \
+docker run -d --rm \
   --name openplc-runtime \
   -p 8443:8443 \
   --cap-add=SYS_NICE \
@@ -175,6 +173,7 @@ docker logs openplc-runtime
 | Option | Meaning |
 |---|---|
 | `-d` | Runs the container in the background |
+| `--rm` | Automatically removes the container after it stops |
 | `--name openplc-runtime` | Gives the container a readable name |
 | `-p 8443:8443` | Maps port `8443` from the container to the host |
 | `--cap-add=SYS_NICE` | Allows the container to adjust scheduling behavior |
