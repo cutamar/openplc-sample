@@ -1,21 +1,86 @@
 {
-  "name": "My Docs",
-  "description": "My documentation site",
+  "name": "OpenPLC Temperature Control",
+  "description": "OpenPLC temperature control project using Structured Text and Modbus TCP.",
   "sidebar": [
-  {
-    "group": "Getting Started",
-    "pages": [
-      {
-        "title": "Getting to know docs.page",
-        "href": "/",
-        "icon": "rocket"
-      },
-      {
-        "title": "Next Steps",
-        "href": "/next-steps",
-        "icon": "arrow-right"
-      }
-    ]
-  }
-]
+    {
+      "group": "Project",
+      "pages": [
+        {
+          "title": "Overview",
+          "href": "/",
+          "icon": "home"
+        },
+        {
+          "title": "Scenario",
+          "href": "/scenario",
+          "icon": "thermometer"
+        }
+      ]
+    },
+    {
+      "group": "Setup",
+      "pages": [
+        {
+          "title": "OpenPLC Installation",
+          "href": "/setup/openplc",
+          "icon": "download"
+        },
+        {
+          "title": "Editor Basics",
+          "href": "/setup/editor-basics",
+          "icon": "code"
+        }
+      ]
+    },
+    {
+      "group": "Implementation",
+      "pages": [
+        {
+          "title": "Structured Text Program",
+          "href": "/implementation/structured-text",
+          "icon": "file-code"
+        },
+        {
+          "title": "Runtime Deployment",
+          "href": "/implementation/runtime-deployment",
+          "icon": "play"
+        },
+        {
+          "title": "Modbus TCP Client",
+          "href": "/implementation/modbus-client",
+          "icon": "network"
+        }
+      ]
+    },
+    {
+      "group": "Testing",
+      "pages": [
+        {
+          "title": "Validation Tests",
+          "href": "/testing/validation",
+          "icon": "check-circle"
+        },
+        {
+          "title": "Results",
+          "href": "/testing/results",
+          "icon": "bar-chart"
+        }
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        {
+          "title": "Variables",
+          "href": "/reference/variables",
+          "icon": "list"
+        },
+        {
+          "title": "Threshold Logic",
+          "href": "/reference/threshold-logic",
+          "icon": "settings"
+        }
+      ]
+    }
+  ]
 }
