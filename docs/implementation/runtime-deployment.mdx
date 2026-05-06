@@ -1,56 +1,97 @@
 ---
-title: Welcome to docs.page!
-description: Get started with docs.page
+title: Runtime Deployment
+description: Deploying the Structured Text control logic to OpenPLC Runtime and confirming execution.
 ---
 
-Welcome to docs.page! The init command you just ran has created a basic file struture in your project to help you get started.
+This page documents the deployment of the Structured Text control logic to OpenPLC Runtime.
 
-## Walkthrough
+The purpose of this step is to confirm that the PLC program created in OpenPLC Editor can be generated, uploaded, compiled, and executed in the runtime environment.
 
-### Configuration
+## Deployment Goal
 
-In the root of your directory a new `docs.json` file has been created. This file is used to configure your documentation site. You can customize the name, description, and sidebar, theme, logos and more using this file.
+The deployment step verifies that:
 
-Here's a basic example of what the file looks like:
+- the OpenPLC Runtime web interface is reachable
+- the Structured Text program can be generated from OpenPLC Editor
+- the generated program can be uploaded to OpenPLC Runtime
+- the program can be compiled successfully
+- the runtime can be started
+- the PLC logic runs inside the runtime
 
+## Runtime Version Used
+
+OpenPLC Runtime v3 was used for the main deployment workflow because it includes the classic web-based interface.
+
+OpenPLC Runtime v4 was also tested, but it did not provide the web interface needed for the assignment documentation and deployment workflow.
+
+## Running OpenPLC Runtime v3
+
+Before deploying the program, OpenPLC Runtime v3 needs to be running.
+
+The runtime setup is described in the [OpenPLC installation instructions](/setup/openplc#installing-openplc-runtime-v3).
+
+After starting the runtime, the web interface should be available at:
+
+```text
+http://localhost:8080
 ```
-{
-  "name": "My Docs",
-  "description": "My documentation site",
-  "sidebar": [
-  {
-    "group": "Getting Started",
-    "pages": [
-      {
-        "title": "Getting to know docs.page",
-        "href": "/",
-        "icon": "rocket"
-      },
-      {
-        "title": "Next Steps",
-        "href": "/next-steps",
-        "icon": "arrow-right"
-      }
-    ]
-  }
-]
-}
+
+## Preparing the Program in OpenPLC Editor
+
+After writing the Structured Text logic in OpenPLC Editor, the program needs to be generated for OpenPLC Runtime v3.
+
+In OpenPLC Editor:
+
+1. Open the project.
+2. In the left sidebar, select **Device**.
+3. Open **Configuration**.
+4. In the device drop-down, change the target from **OpenPLC Simulator** to **OpenPLC Runtime v3**.
+5. Leave the **IP Address** field empty, because the generated file will be uploaded manually through the Runtime web interface.
+6. Generate or build the program.
+
+Note: Connecting from the v4 editor to the v3 didn't work in my case, only to v4 runtime. That is the primary reason why we are manually uploading it through the web interface.
+
+![OpenPLC Editor device configuration for Runtime v3](/implementation/assets/editor-runtime-v3-configuration.png)
+
+After generation, the program file can be found in the project directory:
+
+```text
+build/OpenPLC Runtime v3/src/program.st
 ```
 
-To learn more about the advanced configuration options, check out the [docs](https://use.docs.page/configuration).
+This is the file that will be uploaded to OpenPLC Runtime v3.
 
-### Content
+## Accessing the Runtime Web Interface
 
-docs.page uses the `docs` directory to store your documentation pages. Two pages have been created for you:
+Open the OpenPLC Runtime web interface in the browser `http://localhost:8080` and log in with the default OpenPLC Runtime v3 credentials.
 
-- `index.mdx` - The home page of your documentation site, resolves to the root URL.
-- `next-steps.mdx` - A page to help you get started with docs.page, resolves to `/next-steps`.
+After logging in, the runtime dashboard should be visible.
 
-Documentation can be written using the standard [GitHub Flavored Markdown Spec](https://github.github.com/gfm/) and also supports the use of [MDX](https://mdxjs.com/), 
-with the ability to render custom [components](https://use.docs.page/components) for more advanced use cases.
+## Uploading the Program
 
-## Preview
+In the OpenPLC Runtime web interface:
 
-To preview your documentation site, head over to [https://docs.page/preview](https://docs.page/preview) in your browser and open this directory.
+1. In the left sidebar, click **Programs**.
+2. Select the generated `program.st` file using the **Browse** button.
+3. Click **Upload Program**.
+4. Enter a name on the new page and click on **Upload program**.
+4. Wait for the upload and compilation process to finish.
+5. Check that compilation completed successfully.
 
-Previewing your documentation site will allow you to see the changes you make in real-time before you publish to the world.
+![OpenPLC Runtime program upload page](/implementation/assets/runtime-programs-view.png)
+
+![OpenPLC Runtime program upload page](/implementation/assets/runtime-program-upload.png)
+
+![OpenPLC Runtime successful compilation](/implementation/assets/runtime-successful-compilation.png)
+
+## Starting the Runtime
+
+After the program has been uploaded and compiled, start the PLC runtime from the left sidebar by clicking on **Start PLC**.
+
+![OpenPLC Runtime started](/implementation/assets/runtime-stopped.png)
+
+The runtime should show that the program is running.
+
+![OpenPLC Runtime started](/implementation/assets/runtime-started.png)
+
+After deployment, the control logic is running in OpenPLC Runtime and ready for Modbus TCP communication and validation tests.

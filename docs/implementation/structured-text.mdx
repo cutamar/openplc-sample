@@ -30,14 +30,6 @@ The following variables are used by the program:
 | `High_Threshold` | Local | `REAL` | `86.0` | Temperature where the fan turns on, in °F |
 | `Low_Threshold` | Local | `REAL` | `77.0` | Temperature where the fan turns off, in °F |
 
-The values correspond to:
-
-| Fahrenheit | Meaning |
-|---:|---|
-| `68.0 °F` | Initial low temperature |
-| `77.0 °F` | Fan OFF threshold |
-| `86.0 °F` | Fan ON threshold |
-
 ## Variable Declaration
 
 In OpenPLC Editor, variables can be added in two ways.
@@ -96,7 +88,7 @@ Use `%MD` for internal 32-bit numeric memory values. This is useful when the PLC
 
 For this project, the temperature is simulated. There is no real physical temperature sensor connected to the PLC.
 
-Because of that, `Temperature_Sensor` can be mapped to an internal memory word or holding register so that the Python Modbus client can write simulated values to it.
+Because of that, `Temperature_Sensor` can be mapped to a holding register so that the Python Modbus client can write simulated values to it.
 
 The cooling fan is an output controlled by the PLC. Therefore, it should be mapped as a Boolean output/coil.
 
