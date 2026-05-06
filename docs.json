@@ -51,30 +51,15 @@
       "group": "Testing",
       "pages": [
         {
-          "title": "Validation Tests",
-          "href": "/testing/validation",
+          "title": "Validation and Tests",
+          "href": "/testing/validation-tests",
           "icon": "check-circle"
-        },
-        {
-          "title": "Results",
-          "href": "/testing/results",
-          "icon": "bar-chart"
         }
       ]
     },
     {
       "group": "Reference",
       "pages": [
-        {
-          "title": "Variables",
-          "href": "/reference/variables",
-          "icon": "list"
-        },
-        {
-          "title": "Threshold Logic",
-          "href": "/reference/threshold-logic",
-          "icon": "sliders"
-        },
         {
           "title": "Structured Text Resources",
           "href": "/reference/structured-text-resources",

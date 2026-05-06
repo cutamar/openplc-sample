@@ -1,56 +1,264 @@
 ---
-title: Welcome to docs.page!
-description: Get started with docs.page
+title: Modbus TCP Client
+description: Python pymodbus client for sending simulated temperature values and reading fan output.
 ---
 
-Welcome to docs.page! The init command you just ran has created a basic file struture in your project to help you get started.
+This page documents the Modbus TCP communication part of the project.
 
-## Walkthrough
+The goal is to use a Python client to communicate with OpenPLC Runtime, send simulated temperature values, and read the cooling fan output.
 
-### Configuration
+The client script used for this project can be found in [the repository](https://github.com/cutamar/openplc-sample/tree/main/scripts/test_temperature_control.py).
 
-In the root of your directory a new `docs.json` file has been created. This file is used to configure your documentation site. You can customize the name, description, and sidebar, theme, logos and more using this file.
+## Goal
 
-Here's a basic example of what the file looks like:
+The Modbus TCP client is used to:
 
+- connect to OpenPLC Runtime
+- write simulated temperature values to the PLC
+- read the cooling fan output from the PLC
+- validate that the PLC program responds correctly to different input values
+- demonstrate Modbus TCP communication with OpenPLC Runtime
+
+## Why Modbus TCP Is Used
+
+Modbus TCP is a common industrial communication protocol.
+
+In this project, it is used to simulate communication between an external system and the PLC runtime.
+
+Instead of using a physical temperature sensor, the Python client sends test values to the PLC. The PLC then executes the Structured Text logic and updates the cooling fan output.
+
+## Python Dependency
+
+The client uses `pymodbus`.
+
+Install it with:
+
+```bash
+pip install pymodbus
 ```
-{
-  "name": "My Docs",
-  "description": "My documentation site",
-  "sidebar": [
-  {
-    "group": "Getting Started",
-    "pages": [
-      {
-        "title": "Getting to know docs.page",
-        "href": "/",
-        "icon": "rocket"
-      },
-      {
-        "title": "Next Steps",
-        "href": "/next-steps",
-        "icon": "arrow-right"
-      }
-    ]
-  }
-]
-}
+
+Or, if using a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install pymodbus
 ```
 
-To learn more about the advanced configuration options, check out the [docs](https://use.docs.page/configuration).
+## OpenPLC Variable Mapping
 
-### Content
+The PLC program uses the following variables:
 
-docs.page uses the `docs` directory to store your documentation pages. Two pages have been created for you:
+```pascal
+VAR
+    Temperature_Sensor : REAL AT %MD0 := 68.0;
+    Cooling_Fan : BOOL AT %QX0.0 := FALSE;
+    High_Threshold : REAL AT %MD1 := 86.0;
+    Low_Threshold : REAL AT %MD2 := 77.0;
+END_VAR
+```
 
-- `index.mdx` - The home page of your documentation site, resolves to the root URL.
-- `next-steps.mdx` - A page to help you get started with docs.page, resolves to `/next-steps`.
+## Modbus Address Mapping
 
-Documentation can be written using the standard [GitHub Flavored Markdown Spec](https://github.github.com/gfm/) and also supports the use of [MDX](https://mdxjs.com/), 
-with the ability to render custom [components](https://use.docs.page/components) for more advanced use cases.
+In the Python script, the OpenPLC variables are accessed using the following Modbus addresses:
 
-## Preview
+| PLC Variable | PLC Location | Type | Modbus Area | Python Address | Direction |
+|---|---|---|---|---:|---|
+| `Temperature_Sensor` | `%MD0` | `REAL` | Holding Registers | `2048` | Client writes to PLC |
+| `High_Threshold` | `%MD1` | `REAL` | Holding Registers | `2050` | Client reads from PLC |
+| `Low_Threshold` | `%MD2` | `REAL` | Holding Registers | `2052` | Client reads from PLC |
+| `Cooling_Fan` | `%QX0.0` | `BOOL` | Coils | `0` | Client reads from PLC |
 
-To preview your documentation site, head over to [https://docs.page/preview](https://docs.page/preview) in your browser and open this directory.
+The `%MD...` variables are 32-bit values. A Modbus holding register is 16 bits wide, so each `REAL` value is handled as two 16-bit registers.
 
-Previewing your documentation site will allow you to see the changes you make in real-time before you publish to the world.
+That is why the Python client reads and writes two registers for each `REAL` value.
+
+## Important Note About the Address Offset
+
+The Python script uses addresses `2048`, `2050`, and `2052` for `%MD0`, `%MD1`, and `%MD2`.
+
+This is because OpenPLC exposes internal memory through a Modbus holding register offset. In this setup, the `%MD` memory area starts at holding register address `2048`.
+
+The holding register offset was identified by scanning the register range for non-zero values, since `%MD0`, `%MD1`, and `%MD2` are initialized with default values in the PLC program.
+
+The mappings used in the script are:
+
+```python
+TEMPERATURE_SENSOR_ADDR = 2048   # %MD0
+HIGH_THRESHOLD_ADDR = 2050       # %MD1
+LOW_THRESHOLD_ADDR = 2052        # %MD2
+COOLING_FAN_COIL_ADDR = 0        # %QX0.0
+```
+
+## REAL Values and Register Encoding
+
+The temperature and threshold variables are `REAL` values.
+
+A `REAL` is a 32-bit floating-point value, but Modbus holding registers are 16-bit values. Therefore, one `REAL` value must be split into two 16-bit registers before it can be sent over Modbus.
+
+The script uses Python's `struct` module to convert between floats and Modbus registers.
+
+```python
+def float_to_registers(value: float) -> list[int]:
+    packed = struct.pack(">f", value)
+    return list(struct.unpack(">HH", packed))
+```
+
+This converts a Python float such as `86.0` into two Modbus registers.
+
+The reverse operation converts two Modbus registers back into a Python float:
+
+```python
+def registers_to_float(registers: list[int]) -> float:
+    packed = struct.pack(">HH", registers[0], registers[1])
+    return struct.unpack(">f", packed)[0]
+```
+
+## Writing a Simulated Temperature
+
+The script writes a simulated temperature value to the `Temperature_Sensor` variable.
+
+```python
+def write_real(client: ModbusTcpClient, address: int, value: float) -> None:
+    registers = float_to_registers(value)
+
+    result = client.write_registers(address=address, values=registers)
+
+    if result.isError():
+        raise RuntimeError(f"Failed to write REAL value {value} to address {address}: {result}")
+```
+
+For example, this writes `86.0 °F` to `Temperature_Sensor`:
+
+```python
+write_real(client, TEMPERATURE_SENSOR_ADDR, 86.0)
+```
+
+## Reading Threshold Values
+
+The script reads the threshold values from OpenPLC to confirm that the values are available through Modbus.
+
+```python
+print(f"High_Threshold = {read_real(client, HIGH_THRESHOLD_ADDR):.1f} °F")
+print(f"Low_Threshold  = {read_real(client, LOW_THRESHOLD_ADDR):.1f} °F")
+```
+
+The expected values are:
+
+| Variable | Expected Value |
+|---|---:|
+| `High_Threshold` | `86.0 °F` |
+| `Low_Threshold` | `77.0 °F` |
+
+The script contains optional write operations for the thresholds, but they are commented out because the thresholds are already initialized in the PLC program:
+
+```python
+# write_real(client, HIGH_THRESHOLD_ADDR, 86.0)
+# write_real(client, LOW_THRESHOLD_ADDR, 77.0)
+```
+
+## Reading the Cooling Fan Output
+
+The fan output is a Boolean value mapped to `%QX0.0`.
+
+In Modbus, this is read as coil address `0`.
+
+```python
+def read_fan_state(client: ModbusTcpClient) -> bool:
+    result = client.read_coils(address=COOLING_FAN_COIL_ADDR, count=1)
+
+    if result.isError():
+        raise RuntimeError(f"Failed to read Cooling_Fan coil: {result}")
+
+    return bool(result.bits[0])
+```
+
+If the returned value is `True`, the cooling fan is ON.
+
+If the returned value is `False`, the cooling fan is OFF.
+
+## Test Function
+
+The script uses a helper function to write a temperature value, wait for the PLC to process it, read the fan output, and compare the result with the expected value.
+
+```python
+def run_test(client: ModbusTcpClient, temperature: float, expected_fan: bool | None = None) -> None:
+    print(f"\nSetting Temperature_Sensor to {temperature:.1f} °F")
+
+    write_real(client, TEMPERATURE_SENSOR_ADDR, temperature)
+
+    # Give OpenPLC at least a few scan cycles to process the new value
+    time.sleep(0.2)
+
+    fan_state = read_fan_state(client)
+
+    print(f"Cooling_Fan = {fan_state}")
+
+    if expected_fan is not None:
+        result = "PASS" if fan_state == expected_fan else "FAIL"
+        print(f"Expected Cooling_Fan = {expected_fan} -> {result}")
+```
+
+The short delay is important because OpenPLC executes the PLC logic cyclically. After writing a new value, the script waits briefly so the runtime has time to process the updated input.
+
+## Test Sequence
+
+The script tests the hysteresis behavior with the following sequence:
+
+| Step | Written `Temperature_Sensor` | Expected `Cooling_Fan` | Purpose |
+|---:|---:|---|---|
+| 1 | `68.0 °F` | `False` | Fan should stay off at low temperature |
+| 2 | `86.0 °F` | `True` | Fan should turn on at the high threshold |
+| 3 | `82.4 °F` | `True` | Fan should remain on between thresholds |
+| 4 | `77.0 °F` | `False` | Fan should turn off at the low threshold |
+
+The third test is important because it validates hysteresis. Even though `82.4 °F` is below the high threshold, the fan should stay on because the temperature has not yet dropped to the low threshold.
+
+## Running the Client
+
+Before running the script, make sure that:
+
+- OpenPLC Runtime v3 is running
+- the PLC program has been uploaded and started
+- Docker exposes port `502`
+- the Python environment has `pymodbus` installed
+
+Run the script with:
+
+```bash
+python test_temperature_control.py
+```
+
+## Expected Output
+
+The output should show that the client connected to OpenPLC Runtime, read the thresholds, wrote test temperatures, and checked the fan output.
+
+Example:
+
+```text
+Connected to OpenPLC Runtime
+High_Threshold = 86.0 °F
+Low_Threshold  = 77.0 °F
+
+Setting Temperature_Sensor to 68.0 °F
+Cooling_Fan = False
+Expected Cooling_Fan = False -> PASS
+
+Setting Temperature_Sensor to 86.0 °F
+Cooling_Fan = True
+Expected Cooling_Fan = True -> PASS
+
+Setting Temperature_Sensor to 82.4 °F
+Cooling_Fan = True
+Expected Cooling_Fan = True -> PASS
+
+Setting Temperature_Sensor to 77.0 °F
+Cooling_Fan = False
+Expected Cooling_Fan = False -> PASS
+
+Connection closed
+```
+
+The Modbus TCP client demonstrates that simulated temperature values can be sent to OpenPLC Runtime and that the cooling fan output can be read back from the PLC.
+
+This validates the communication between the Python client and the PLC runtime, and it confirms that the deployed temperature control logic behaves as expected.
