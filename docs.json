@@ -51,8 +51,8 @@
       "group": "Testing",
       "pages": [
         {
-          "title": "Validation and Tests",
-          "href": "/testing/validation-tests",
+          "title": "Validation and Results",
+          "href": "/testing/validation-results",
           "icon": "check-circle"
         }
       ]
