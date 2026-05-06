@@ -1,0 +1,260 @@
+---
+title: Future Improvements
+description: Research-oriented improvements and extensions for the OpenPLC temperature control project.
+---
+
+This page lists possible improvements and extensions for the OpenPLC temperature control project.
+
+The current project is intentionally simple. It demonstrates the basic workflow of PLC programming, deployment, Modbus TCP communication, and validation. Future work could make the system more realistic and more useful.
+
+## More Realistic Physical Process Model
+
+The current project writes the temperature value directly through Modbus.
+
+A future version could simulate the physical process more realistically.
+
+| Improvement | Description |
+|---|---|
+| Thermal inertia | Temperature should rise and fall gradually instead of changing instantly |
+| Fan cooling effect | When the fan is ON, the temperature should decrease over time |
+| Heat source | A simulated machine, room, or process could continuously generate heat |
+| Environmental disturbance | External temperature or random heat spikes could affect the process |
+| Sensor noise | Small random variations could be added to the temperature value |
+| Delayed actuator effect | The fan should not cool the system immediately, but only after a short delay |
+
+This would make the system behave more like a real cyber-physical process.
+
+## Better Process States
+
+The current system only has one output: `Cooling_Fan`.
+
+A more realistic version could add more states and outputs.
+
+| Variable | Type | Purpose |
+|---|---|---|
+| `Sensor_Error` | `BOOL` | Indicates invalid or unrealistic sensor values |
+| `High_Temperature_Alarm` | `BOOL` | Indicates that the temperature is dangerously high |
+| `Manual_Mode` | `BOOL` | Allows switching between automatic and manual control |
+| `Manual_Fan_Command` | `BOOL` | Allows manual fan control in manual mode |
+| `System_State` | `INT` or `ENUM` | Represents normal, warning, alarm, or fault states |
+
+This would better represent how real industrial control systems separate normal control, alarms, manual override, and fault handling.
+
+## Input Validation and Safety Logic
+
+The current PLC logic assumes that all received temperature values are valid.
+
+A future version could include input validation.
+
+Example:
+
+```pascal
+IF Temperature_Sensor < -40.0 THEN
+    Sensor_Error := TRUE;
+ELSIF Temperature_Sensor > 212.0 THEN
+    Sensor_Error := TRUE;
+ELSE
+    Sensor_Error := FALSE;
+END_IF;
+```
+
+Additional safety logic could include:
+
+| Check | Reason |
+|---|---|
+| Minimum valid temperature | Detects impossible or suspicious low values |
+| Maximum valid temperature | Detects impossible or dangerous high values |
+| Rate-of-change limit | Detects values that change too quickly to be physically realistic |
+| Sensor timeout | Detects missing or stale sensor updates |
+| Safe fallback mode | Defines what the PLC should do when input data is invalid |
+
+For example, if the temperature sensor becomes invalid, the system could turn the fan ON as a safe default and raise an alarm.
+
+## Security-Oriented Modbus Experiments
+
+Modbus TCP is useful for this project because it is simple and easy to test. It is also useful from a cybersecurity perspective because basic Modbus does not provide strong built-in authentication or encryption.
+
+Future experiments could test how the PLC reacts to unsafe or unauthorized Modbus activity.
+
+| Experiment | Research Question |
+|---|---|
+| Unauthorized temperature write | Can an external client change the process behavior by writing to `Temperature_Sensor`? |
+| Threshold manipulation | What happens if an attacker changes `High_Threshold` or `Low_Threshold`? |
+| Replay attack | Can previously captured Modbus writes be replayed to force old process states? |
+| False low temperature | Can an attacker keep the fan OFF by writing a fake low temperature? |
+| False high temperature | Can an attacker force the fan ON continuously by writing a fake high temperature? |
+| Invalid register values | How does the system handle impossible or malformed values? |
+| Rapid write flooding | What happens if a client writes values faster than the control process expects? |
+| Coil manipulation | Can an attacker directly influence Boolean outputs? |
+
+These experiments would connect the PLC project more directly to physical systems cybersecurity.
+
+## Network Monitoring
+
+The current project validates Modbus behavior from the Python client.
+
+A future version could also monitor the network traffic.
+
+| Tool or Method | Purpose |
+|---|---|
+| Wireshark | Inspect Modbus TCP requests and responses |
+| tcpdump | Capture traffic on port `502` |
+| Custom Python logging | Record every write and read performed by the validation client |
+
+Useful examples to capture traffic:
+
+```bash
+sudo tcpdump -i any port 502
+```
+
+or:
+
+```bash
+sudo tcpdump -i any port 502 -w modbus-test.pcap
+```
+
+The resulting packet capture could be used to study normal and abnormal Modbus behavior.
+
+## Attack Detection and Anomaly Detection
+
+A research-focused extension could compare normal validation traffic with suspicious traffic.
+
+| Normal Behavior | Suspicious Behavior |
+|---|---|
+| Temperature changes gradually | Temperature jumps suddenly from low to very high |
+| Writes occur at expected intervals | Writes happen very rapidly |
+| Only the expected client writes values | Unknown client writes to PLC registers |
+| Thresholds remain stable | Thresholds are changed unexpectedly |
+| Fan state follows temperature logic | Fan state changes without a reasonable process cause |
+
+Possible detection features:
+
+- number of writes per minute
+- source IP address of the client
+- register addresses being written
+- size and frequency of value changes
+- mismatch between expected and observed fan state
+- unexpected threshold changes
+
+## Reproducible Runtime Environment
+
+The setup currently documents OpenPLC Editor, Runtime v3, Runtime v4, Docker, and Arch Linux setup.
+
+A future version could improve reproducibility by adding:
+
+| Improvement | Description |
+|---|---|
+| Docker Compose file | Start OpenPLC Runtime with one command |
+| Pinned image tags | Avoid unexpected changes from `latest` images |
+| Runtime version notes | Document the exact OpenPLC Runtime version used |
+| Startup script | Start the runtime and validation client consistently |
+| Known issues section | Document Runtime v4 web interface behavior and Runtime v3 usage |
+
+This would make it easier for another student or researcher to reproduce the same experiment.
+
+## Hardening and Defensive Controls
+
+The current setup is intentionally open for testing.
+
+A security-focused version could add defensive controls.
+
+| Control | Purpose |
+|---|---|
+| Bind Modbus only to localhost | Prevent access from other machines |
+| Firewall rules | Restrict access to port `502` and `8080` |
+| Separate network | Place the PLC runtime in an isolated Docker network |
+| Runtime credentials | Change default OpenPLC web credentials |
+| Read-only thresholds | Prevent unauthorized threshold changes |
+| Allowlist client IPs | Allow only the validation client to write values |
+| Logging and alerting | Detect unexpected access or register writes |
+
+These controls would allow the project to compare insecure and hardened configurations.
+
+## Fault Injection
+
+Fault injection would make the project more realistic and useful for cybersecurity analysis.
+
+Possible faults:
+
+| Fault | Expected Safe Behavior |
+|---|---|
+| Sensor stuck at one value | Detect stale sensor value |
+| Sensor jumps suddenly | Trigger sensor error or alarm |
+| Sensor sends impossible value | Reject value or enter safe mode |
+| Fan output does not change | Trigger actuator fault |
+| Runtime restarts | Recover to a safe default state |
+| Network delay | Avoid unsafe control decisions based on stale values |
+
+This would connect the PLC logic to reliability and safety engineering.
+
+## Manual and Automatic Modes
+
+A more advanced control system could support two operating modes.
+
+| Mode | Behavior |
+|---|---|
+| Automatic | PLC controls the fan based on temperature thresholds |
+| Manual | Operator directly controls the fan |
+| Fault mode | PLC enters a safe state when invalid data is detected |
+
+Possible variables:
+
+```pascal
+VAR
+    Auto_Mode : BOOL := TRUE;
+    Manual_Fan_Command : BOOL := FALSE;
+    Sensor_Error : BOOL := FALSE;
+    High_Temperature_Alarm : BOOL := FALSE;
+END_VAR
+```
+
+This would allow testing how cybersecurity events affect operator control and automatic control.
+
+## Human-Machine Interface
+
+A future version could include a small HMI or dashboard.
+
+The dashboard could display:
+
+- current temperature
+- fan state
+- threshold values
+- alarm state
+- sensor error state
+- recent Modbus writes
+- validation result history
+
+This could be implemented with:
+
+- a simple Python web dashboard
+- Grafana
+- OpenPLC monitoring features
+
+## Research Questions
+
+Possible research questions for a physical systems cybersecurity class:
+
+1. How can unauthorized Modbus writes affect the physical behavior of a PLC-controlled process?
+2. How can unsafe setpoint changes be detected?
+3. Which process variables are most useful for detecting abnormal behavior?
+4. How can packet captures be correlated with PLC state changes?
+5. How should PLC logic handle invalid or unrealistic sensor values?
+6. What is the difference between a communication failure and a malicious command?
+7. How can a simple PLC system be hardened without making testing too difficult?
+8. Can anomaly detection identify attacks using only Modbus traffic?
+9. How does cyclic PLC execution affect attack timing and detection?
+10. What evidence should be collected for incident analysis in an ICS environment?
+
+## Suggested Next Step
+
+The most useful next improvement would be to add an attack-and-detection experiment.
+
+A simple version could include:
+
+1. a normal validation run
+2. a malicious script that writes unsafe values or thresholds
+3. a packet capture of both runs
+4. a detection script that flags suspicious writes
+5. a short comparison of normal vs abnormal behavior
+
+This would turn the project from a basic PLC/Modbus demonstration into a small cybersecurity research lab.

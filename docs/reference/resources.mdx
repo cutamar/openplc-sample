@@ -1,0 +1,57 @@
+---
+title: Resources
+description: Structured Text, OpenPLC, PLC addressing, Modbus, and pymodbus reference links.
+---
+
+This page collects the main references used for the OpenPLC temperature control project.
+
+## Structured Text Programming
+
+| Topic | Resource |
+|---|---|
+| Structured Text overview | [Fernhill SCADA: Structured Text](https://www.fernhillsoftware.com/help/iec-61131/structured-text/index.html) |
+| `IF`, `ELSIF`, `ELSE`, `END_IF` statements | [Fernhill SCADA: IF Statement](https://www.fernhillsoftware.com/help/iec-61131/structured-text/st-if.html) |
+| Assignment with `:=` | [Fernhill SCADA: Assignment Statement](https://www.fernhillsoftware.com/help/iec-61131/structured-text/st-assignment.html) |
+| Variable references | [Fernhill SCADA: Variable References](https://www.fernhillsoftware.com/help/iec-61131/common-elements/variable-reference.html) |
+| Variable declarations, `VAR`, `VAR_INPUT`, `VAR_OUTPUT` | [Fernhill SCADA: Variable Declarations](https://www.fernhillsoftware.com/help/iec-61131/common-elements/variable-declaration.html) |
+| Structured Text in CODESYS | [CODESYS: Structured Text and Extended Structured Text](https://content.helpme-codesys.com/en/CODESYS%20Development%20System/_cds_f_programming_language_st.html) |
+| Structured Text in TwinCAT/Beckhoff | [Beckhoff: Structured Text](https://infosys.beckhoff.com/content/1033/tcplccontrol/925248523.html) |
+| Variable declaration examples in TwinCAT/Beckhoff | [Beckhoff: Declaring Variables](https://infosys.beckhoff.com/content/1033/tc3_plc_intro/2526557579.html) |
+
+## IEC 61131-3 and PLC Programming Background
+
+| Topic | Resource |
+|---|---|
+| PLCopen overview of IEC 61131-3 | [PLCopen: IEC 61131-3 Overview](https://www.plcopen.org/download_file/force/bcddc27b-53f6-44ea-b0e3-e3d49c1564dc/342/) |
+| General Structured Text programming guide | [PLC Programming: Structured Text Programming Guide](https://plcprogramming.io/blog/structured-text-programming-guide) |
+
+## OpenPLC Project and Editor
+
+| Topic | Resource |
+|---|---|
+| OpenPLC download page | [AutonomyLogic: OpenPLC Downloads](https://autonomylogic.com/download) |
+| OpenPLC archived reference index | [OpenPLC Project: Programming Reference](https://openplcproject.github.io/reference/) |
+| Creating a first OpenPLC project | [OpenPLC Project: Creating Your First Project](https://openplcproject.github.io/reference/basics/first-project) |
+| Uploading a project to OpenPLC | [OpenPLC Project: Uploading Your Project](https://openplcproject.github.io/reference/basics/upload) |
+| OpenPLC Editor overview | [Old AutonomyLogic Docs: OpenPLC Editor Overview](https://old.autonomylogic.com/docs/3-1-openplc-editor-overview/) |
+
+## OpenPLC Addressing and Modbus Mapping
+
+| Topic | Resource |
+|---|---|
+| PLC addressing reference | [OpenPLC Project: PLC Addressing](https://openplcproject.github.io/reference/plc-addressing/) |
+| Modbus slave reference | [OpenPLC Project: Modbus Slave](https://openplcproject.github.io/reference/modbus-slave/) |
+| Modbus master reference | [OpenPLC Project: Modbus Master](https://openplcproject.github.io/reference/modbus-master/) |
+| OpenPLC SCADA / Modbus address mapping reference | [OpenPLC Project GitLab: Modbus Address Mapping](https://openplcproject.gitlab.io/reference/scada/address-mapping.html) |
+| `%MD` and 32-bit `REAL` discussion | [OpenPLC Forum: Map a 32-bit float value on Modbus holding registers](https://openplc.discussion.community/post/map-a-32bit-float-value-type-on-a-modbus-holding-register-from-plcopen-editor-9581506) |
+| Modbus addressing with separated OpenPLC memory areas | [ProtoTwin Docs: OpenPLC Connectivity](https://prototwin.com/docs/virtual-commissioning/openplc) |
+
+## Modbus TCP and Python Client
+
+| Topic | Resource |
+|---|---|
+| pymodbus main documentation | [pymodbus Documentation](https://pymodbus.readthedocs.io/) |
+| pymodbus client API | [pymodbus Client Documentation](https://pymodbus.readthedocs.io/en/latest/source/client.html) |
+| pymodbus GitHub repository | [pymodbus-dev/pymodbus](https://github.com/pymodbus-dev/pymodbus) |
+| Reading holding registers with pymodbus | [pymodbus Client: `read_holding_registers`](https://pymodbus.readthedocs.io/en/v3.6.9/source/client.html) |
+| Example Modbus TCP project using OpenPLC | [Synergy Logic: OpenPLC Example Project](https://docs.synergy-logic.com/SLM-MX/example-projects/openplc/openplc-demo.html) |

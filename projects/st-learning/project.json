@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "name": "st-learning",
+    "type": "plc-project"
+  },
+  "data": {
+    "dataTypes": [],
+    "pous": [],
+    "configuration": {
+      "resource": {
+        "tasks": [
+          {
+            "name": "task0",
+            "triggering": "Cyclic",
+            "interval": "T#20ms",
+            "priority": 1
+          }
+        ],
+        "instances": [
+          {
+            "name": "instance0",
+            "task": "task0",
+            "program": "main"
+          }
+        ],
+        "globalVariables": []
+      }
+    },
+    "servers": [],
+    "debugVariables": {
+      "pous": {
+        "main": [
+          "Start_Button",
+          "Stop_Button",
+          "Motor_Output"
+        ]
+      }
+    },
+    "deletedPous": [],
+    "deletedServers": [
+      {
+        "name": "Localhost",
+        "protocol": "modbus-tcp"
+      }
+    ]
+  }
+}
