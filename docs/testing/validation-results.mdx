@@ -3,23 +3,13 @@ title: Validation and Results
 description: Validation tests and observed results for the OpenPLC temperature control project.
 ---
 
-This page documents the validation tests and results for the OpenPLC temperature control project.
+This page documents the extended validation of the OpenPLC temperature control project.
 
-The purpose of this step is to confirm that the deployed PLC program reacts correctly to different simulated temperature values and that the cooling fan output behaves as expected.
-
-## Validation Goal
-
-The validation checks whether:
-
-- the OpenPLC Runtime is running the deployed program
-- simulated temperature values can be changed
-- the PLC logic processes the updated temperature input
-- the cooling fan output changes according to the defined thresholds
-- the hysteresis behavior works as expected
+While the Modbus TCP client page already demonstrates the basic communication and a small set of functional tests, this page focuses on a more complete validation sequence. The goal is to test normal values, threshold boundary values, edge cases around the thresholds, and the hysteresis behavior of the cooling fan output.
 
 ## Control Logic Under Test
 
-The PLC program uses the following Structured Text logic:
+The PLC program uses two thresholds:
 
 ```pascal
 IF Temperature_Sensor >= High_Threshold THEN
@@ -29,149 +19,67 @@ ELSIF Temperature_Sensor <= Low_Threshold THEN
 END_IF;
 ```
 
-The threshold values are:
-
 | Variable | Value | Meaning |
 |---|---:|---|
 | `High_Threshold` | `86.0 °F` | Fan turns ON at or above this temperature |
 | `Low_Threshold` | `77.0 °F` | Fan turns OFF at or below this temperature |
 
-## Expected Hysteresis Behavior
-
-The fan does not simply switch based on one threshold.
-
-Instead:
-
-- at or above `86.0 °F`, the fan turns ON
-- at or below `77.0 °F`, the fan turns OFF
-- between `77.0 °F` and `86.0 °F`, the previous fan state is kept
-
-This means that a temperature such as `82.4 °F` can have two possible outcomes:
-
-| Previous Fan State | `Temperature_Sensor` | Expected `Cooling_Fan` |
-|---|---:|---|
-| `FALSE` | `82.4 °F` | `FALSE` |
-| `TRUE` | `82.4 °F` | `TRUE` |
-
-This is expected because `82.4 °F` is between both thresholds.
+Between `77.0 °F` and `86.0 °F`, the fan keeps its previous state. This is the hysteresis behavior.
 
 ## Test Method
 
-The test method is:
+The validation was performed with a Python `pymodbus` script.
 
-1. Start OpenPLC Runtime.
-2. Confirm that the temperature control program is running.
-3. Change the simulated `Temperature_Sensor` value.
-4. Observe the `Cooling_Fan` output.
-5. Compare the observed result with the expected result.
-6. Record the result as pass or fail.
+The script connects to OpenPLC Runtime over Modbus TCP, writes simulated values to `Temperature_Sensor`, reads the `Cooling_Fan` coil, and compares the observed output with the expected result.
 
-The values can be changed manually in the OpenPLC debugger or through a Modbus TCP client.
+The relevant mappings are:
 
-## Test Cases
+| PLC Variable | PLC Location | Modbus Address | Access |
+|---|---|---:|---|
+| `Temperature_Sensor` | `%MD0` | `2048` | Write |
+| `High_Threshold` | `%MD1` | `2050` | Read |
+| `Low_Threshold` | `%MD2` | `2052` | Read |
+| `Cooling_Fan` | `%QX0.0` | `0` | Read |
 
-| Test Case | Input `Temperature_Sensor` | Previous Fan State | Expected `Cooling_Fan` | Purpose |
-|---:|---:|---|---|---|
-| 1 | `68.0 °F` | `FALSE` | `FALSE` | Confirms fan stays off at low temperature |
-| 2 | `77.0 °F` | `FALSE` | `FALSE` | Confirms low threshold keeps or sets fan off |
-| 3 | `82.4 °F` | `FALSE` | `FALSE` | Confirms fan stays off between thresholds before it has turned on |
-| 4 | `86.0 °F` | `FALSE` | `TRUE` | Confirms fan turns on at high threshold |
-| 5 | `95.0 °F` | `TRUE` | `TRUE` | Confirms fan stays on above high threshold |
-| 6 | `82.4 °F` | `TRUE` | `TRUE` | Confirms hysteresis keeps fan on between thresholds |
-| 7 | `77.0 °F` | `TRUE` | `FALSE` | Confirms fan turns off at low threshold |
-| 8 | `68.0 °F` | `FALSE` | `FALSE` | Confirms fan remains off after cooling |
+The `%MD` values are `REAL` values. Each `REAL` is encoded as two 16-bit Modbus holding registers.
 
-## Suggested Test Sequence
+## Validation Test Table
 
-Run the tests in this order:
+The following table describes the complete test sequence.
 
-| Step | Set `Temperature_Sensor` To | Expected `Cooling_Fan` |
-|---:|---:|---|
-| 1 | `68.0 °F` | `FALSE` |
-| 2 | `82.4 °F` | `FALSE` |
-| 3 | `86.0 °F` | `TRUE` |
-| 4 | `95.0 °F` | `TRUE` |
-| 5 | `82.4 °F` | `TRUE` |
-| 6 | `77.0 °F` | `FALSE` |
-| 7 | `68.0 °F` | `FALSE` |
+| Step | Input `Temperature_Sensor` | Expected `Cooling_Fan` | What This Validates |
+|---:|---:|---|---|
+| 1 | `68.0 °F` | `FALSE` | Normal low temperature, fan remains off |
+| 2 | `76.9 °F` | `FALSE` | Just below low threshold, fan remains off |
+| 3 | `77.0 °F` | `FALSE` | Exact low threshold, fan is off |
+| 4 | `82.4 °F` | `FALSE` | Between thresholds before fan has turned on |
+| 5 | `85.9 °F` | `FALSE` | Just below high threshold, fan remains off |
+| 6 | `86.0 °F` | `TRUE` | Exact high threshold, fan turns on |
+| 7 | `95.0 °F` | `TRUE` | Above high threshold, fan remains on |
+| 8 | `86.1 °F` | `TRUE` | Just above high threshold, fan remains on |
+| 9 | `82.4 °F` | `TRUE` | Between thresholds after fan has turned on, hysteresis keeps fan on |
+| 10 | `77.1 °F` | `TRUE` | Just above low threshold, fan remains on |
+| 11 | `77.0 °F` | `FALSE` | Exact low threshold, fan turns off |
+| 12 | `68.0 °F` | `FALSE` | Back to low temperature, fan remains off |
 
-This sequence is useful because it shows both normal threshold switching and hysteresis.
+This single sequence tests the low threshold, high threshold, values just below and above the thresholds, and the hysteresis region.
 
-## Results Table
+## Validation Script
 
-Fill in the observed values after running the validation tests.
+The validation script used for the tests can be found [here](https://github.com/cutamar/openplc-sample/tree/main/scripts/validate_temperature_control.py).
 
-| Step | `Temperature_Sensor` | Expected `Cooling_Fan` | Observed `Cooling_Fan` | Result | Notes |
-|---:|---:|---|---|---|---|
-| 1 | `68.0 °F` | `FALSE` | TODO | TODO | Initial low temperature |
-| 2 | `82.4 °F` | `FALSE` | TODO | TODO | Between thresholds before fan turns on |
-| 3 | `86.0 °F` | `TRUE` | TODO | TODO | High threshold reached |
-| 4 | `95.0 °F` | `TRUE` | TODO | TODO | Above high threshold |
-| 5 | `82.4 °F` | `TRUE` | TODO | TODO | Between thresholds after fan is on |
-| 6 | `77.0 °F` | `FALSE` | TODO | TODO | Low threshold reached |
-| 7 | `68.0 °F` | `FALSE` | TODO | TODO | Back to low temperature |
+## Script Output Screenshot
 
-## Runtime Screenshots
+Add one screenshot of the terminal output after running the validation script.
 
-Add screenshots showing the deployed program running in OpenPLC Runtime.
+![pymodbus validation script output](/testing/assets/pymodbus-validation-output.png)
 
-![OpenPLC Runtime running](/testing/assets/runtime-running.png)
+All tests are passing.
 
-![OpenPLC Runtime program compiled successfully](/testing/assets/runtime-program-compiled.png)
+The most important test is the hysteresis behavior:
 
-## Validation Screenshots
+- the fan turns on at `86.0 °F`
+- the fan stays on while the temperature falls through the middle range
+- the fan only turns off when the temperature reaches `77.0 °F`
 
-Add screenshots for representative test cases.
-
-### Fan OFF at Low Temperature
-
-![Temperature low and fan off](/testing/assets/validation-low-temperature-fan-off.png)
-
-### Fan ON at High Temperature
-
-![Temperature high and fan on](/testing/assets/validation-high-temperature-fan-on.png)
-
-### Fan Remains ON Between Thresholds
-
-![Temperature between thresholds and fan remains on](/testing/assets/validation-hysteresis-fan-on.png)
-
-### Fan OFF After Cooling Down
-
-![Temperature cooled down and fan off](/testing/assets/validation-low-threshold-fan-off.png)
-
-## Modbus Test Output
-
-If the validation is performed through a Python Modbus TCP client, include the terminal output here.
-
-```text
-TODO: Add terminal output from the pymodbus validation script
-```
-
-![pymodbus validation output](/testing/assets/pymodbus-validation-output.png)
-
-## Observations
-
-The expected behavior is that the fan does not rapidly switch on and off around a single threshold.
-
-Instead, the fan uses hysteresis:
-
-- it turns on at `86.0 °F`
-- it turns off at `77.0 °F`
-- it keeps its previous state between those values
-
-This behavior is useful for temperature control because real temperature values may fluctuate slightly.
-
-## Issues Encountered
-
-Document any issues encountered during setup, deployment, or testing.
-
-| Issue | Cause | Solution |
-|---|---|---|
-| Runtime v4 did not show the expected web interface | Runtime version behavior/setup difference | Runtime v3 was used for web-based deployment |
-| TODO | TODO | TODO |
-
-## Conclusion
-
-The validation is successful if all observed fan states match the expected fan states.
-
-The most important result is that the hysteresis behavior works correctly. The fan should stay on while the temperature cools down from the high threshold and should only turn off once the low threshold is reached.
+This confirms that the PLC logic behaves correctly and that Modbus TCP communication between the Python client and OpenPLC Runtime works.
