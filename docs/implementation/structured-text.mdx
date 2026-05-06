@@ -17,6 +17,7 @@ The goal of the program is to:
 - turn the cooling fan on when the temperature is too high
 - turn the cooling fan off when the temperature has dropped sufficiently
 - avoid rapid switching around a single threshold
+- expose the relevant variables through OpenPLC location mappings so they can be tested through Modbus
 
 ## Variables
 
@@ -37,7 +38,17 @@ The values correspond to:
 | `77.0 °F` | Fan OFF threshold |
 | `86.0 °F` | Fan ON threshold |
 
-If written as a full Structured Text variable declaration, the variables look like this:
+## Variable Declaration
+
+In OpenPLC Editor, variables can be added in two ways.
+
+The first option is to define them in the variable table. This is useful because the editor displays each variable with its name, class, type, initial value, location, documentation, and debug flag.
+
+![Temperature control variables in the OpenPLC Editor variable table](/implementation/assets/editor-temperature-variable-table.png)
+
+The second option is to write the variables directly in the Structured Text declaration section.
+
+For this program, the variable declaration is:
 
 ```pascal
 VAR
@@ -48,9 +59,87 @@ VAR
 END_VAR
 ```
 
+![Temperature variables declared directly in Structured Text](/implementation/assets/editor-temperature-var-declaration.png)
+
+Depending on the editor view, the Structured Text code area may only contain the program body. In other views, the editor may show or generate the `PROGRAM`, `VAR`, and `END_PROGRAM` structure automatically.
+
+## Location Mappings
+
+To allow the values to be modified later through Modbus, the relevant PLC variables need to be mapped to memory locations.
+
+The common OpenPLC/IEC-style location prefixes are:
+
+| Location Prefix | Data Type | Modbus Area | Typical Python/pymodbus Function | Use Case |
+|---|---|---|---|---|
+| `%IX...` | Digital input bit | Discrete Inputs | `read_discrete_inputs()` | Physical or simulated digital input, read-only from the PLC perspective |
+| `%QX...` | Digital output bit | Coils | `read_coils()` / `write_coil()` | Digital actuator/output such as a fan, lamp, relay, or motor command |
+| `%IW...` | Analog/input word | Input Registers | `read_input_registers()` | Analog sensor input that is read by the PLC |
+| `%QW...` | Analog/output word | Holding Registers | `read_holding_registers()` / `write_register()` | Analog output or externally writable numeric value |
+| `%MW...` | Internal memory word | Holding Registers | `read_holding_registers()` / `write_register()` | Internal numeric memory, useful for simulation and testing |
+| `%MD...` | Internal memory double word, 32-bit | Holding Registers | `read_holding_registers()` / `write_registers()` | Internal 32-bit numeric memory, useful for `REAL`, `DINT`, or other 32-bit values |
+
+### When to Use Which Mapping
+
+Use `%IX` for Boolean input signals that represent something coming into the PLC, such as a switch, button, or digital sensor.
+
+Use `%QX` for Boolean output signals that represent something controlled by the PLC, such as a fan, lamp, relay, or motor output.
+
+Use `%IW` for numeric input values that represent analog sensor readings, such as temperature, pressure, or level.
+
+Use `%QW` for numeric output values that are produced by the PLC and may be read or written as holding registers.
+
+Use `%MW` for internal numeric memory values. This is useful for simulations, test values, and values that do not correspond to real physical I/O.
+
+Use `%MD` for internal 32-bit numeric memory values. This is useful when the PLC variable needs more than one 16-bit register, for example `REAL`, `DINT`, or other 32-bit values.
+
+## Location Mappings Used in This Project
+
+For this project, the temperature is simulated. There is no real physical temperature sensor connected to the PLC.
+
+Because of that, `Temperature_Sensor` can be mapped to an internal memory word or holding register so that the Python Modbus client can write simulated values to it.
+
+The cooling fan is an output controlled by the PLC. Therefore, it should be mapped as a Boolean output/coil.
+
+A possible mapping is:
+
+| Variable | Suggested Mapping | Reason |
+|---|---|---|
+| `Temperature_Sensor` | `%MD0` | Simulated numeric value written by the Modbus client |
+| `Cooling_Fan` | `%QX0.0` | Boolean output controlled by the PLC |
+| `High_Threshold` | `%MD1` | Configurable through Modbus as a 32-bit `REAL` |
+| `Low_Threshold` | `%MD2` | Configurable through Modbus as a 32-bit `REAL` |
+
+For the assignment, the most important values to expose are:
+
+- `Temperature_Sensor`, because the Modbus client needs to send simulated temperature values
+- `Cooling_Fan`, because the Modbus client needs to read whether the PLC turned the fan on or off
+
+The thresholds can remain local variables if they do not need to be changed from the Modbus client.
+
+![Location mappings for temperature sensor and cooling fan](/implementation/assets/editor-temperature-location-mappings.png)
+
 ## Structured Text Logic
 
+The full program body is:
+
 ```pascal
+IF Temperature_Sensor >= High_Threshold THEN
+    Cooling_Fan := TRUE;
+ELSIF Temperature_Sensor <= Low_Threshold THEN
+    Cooling_Fan := FALSE;
+END_IF;
+```
+
+Combined with the variable declaration, the complete Structured Text program is:
+
+```pascal
+VAR
+	Temperature_Sensor : real AT %MD0 := 68.0;
+	Cooling_Fan : bool AT %QX0.0 := FALSE;
+	High_Threshold : real AT %MD1 := 86.0;
+	Low_Threshold : real AT %MD2 := 77.0;
+END_VAR
+
 IF Temperature_Sensor >= High_Threshold THEN
     Cooling_Fan := TRUE;
 ELSIF Temperature_Sensor <= Low_Threshold THEN
@@ -109,9 +198,13 @@ This is expected and useful because it prevents the fan from switching rapidly o
 
 ## OpenPLC Editor Notes
 
-In OpenPLC Editor, the variables should be added in the variable table of the `main` program.
+In OpenPLC Editor, the variables can be added in the variable table or written directly in the Structured Text declaration section.
 
-Depending on the editor view, the Structured Text code area may only contain the program body. The editor may generate the `PROGRAM`, `VAR`, and `END_PROGRAM` structure automatically.
+For the table-based approach, add the variables first and then write only the program logic in the code area.
+
+For the direct Structured Text approach, include the `VAR ... END_VAR` section together with the logic, as shown above.
+
+The exact view depends on how the editor displays the POU. The important point is that the variable names used in the logic must match the declared variable names.
 
 ## Running the Program in OpenPLC Editor
 
